@@ -1,48 +1,48 @@
 package com.example.demo3.Controller;
 
-    import com.example.demo3.Model.Soporte;
-    import com.example.demo3.Repository.SoporteRepository;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.web.bind.annotation.*;
+import com.example.demo3.Model.Soporte;
+import com.example.demo3.service.SoporteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
-    import java.util.List;
+import java.util.List;
 
-    @RestController
-    @RequestMapping("/api/soportes")
-    public class SoporteController {
-        
+@RestController
+@RequestMapping("/api/soportes")
+public class SoporteController {
 
-        @Autowired
-        private SoporteRepository soporteRepository;
+    @Autowired
+    private SoporteService soporteService;
 
-        @PostMapping
-        public Soporte createSoporte(@RequestBody Soporte soporte) {
-            return soporteRepository.save(soporte);
-        }
-
-        @GetMapping
-        public List<Soporte> getAllSoportes() {
-            return soporteRepository.findAll();
-        }
-
-        @GetMapping("/{id}")
-        public Soporte getSoporteById(@PathVariable Long id) {
-            return soporteRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Soporte no encontrado"));
-        }
-
-        @PutMapping("/{id}")
-        public Soporte updateSoporte(@PathVariable Long id, @RequestBody Soporte soporteActualizado) {
-            return soporteRepository.findById(id).map(soporte -> {
-                soporte.setNombre(soporteActualizado.getNombre());
-                soporte.setEspecialidad(soporteActualizado.getEspecialidad());
-                return soporteRepository.save(soporte);
-            }).orElseThrow(() -> new RuntimeException("Soporte no encontrado"));
-        }
-
-        @DeleteMapping("/{id}")
-        public String deleteSoporte(@PathVariable Long id) {
-            soporteRepository.deleteById(id);
-            return "Soporte eliminado";
-        }
+    @PostMapping
+    public Soporte createSoporte(@RequestBody Soporte soporte) {
+        return soporteService.guardarSoporte(soporte);
     }
+
+    @GetMapping
+    public List<Soporte> getAllSoportes() {
+        return soporteService.obtenerTodos();
+    }
+
+    @GetMapping("/{id}")
+    public Soporte getSoporteById(@PathVariable Long id) {
+        return soporteService.obtenerPorId(id);
+    }
+
+    @PutMapping("/{id}")
+    public Soporte updateSoporte(@PathVariable Long id, @RequestBody Soporte soporteActualizado) {
+        Soporte soporte = soporteService.obtenerPorId(id);
+        if (soporte == null) {
+            throw new RuntimeException("Soporte no encontrado");
+        }
+        soporte.setNombre(soporteActualizado.getNombre());
+        soporte.setEspecialidad(soporteActualizado.getEspecialidad());
+        return soporteService.guardarSoporte(soporte);
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteSoporte(@PathVariable Long id) {
+        soporteService.eliminarSoporte(id);
+        return "Soporte eliminado";
+    }
+}

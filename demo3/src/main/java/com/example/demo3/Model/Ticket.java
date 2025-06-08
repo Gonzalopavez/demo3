@@ -1,37 +1,30 @@
 package com.example.demo3.Model;
+
 import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "tickets") // nombra explicitamente la tabla, si no se especifica, se usará el nombre de la clase en minúsculas
-
-
+@Table(name = "tickets") // nombra explícitamente la tabla, si no se especifica, se usará el nombre de la clase en minúsculas
 public class Ticket {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Genera un ID único automáticamente
-    private int id;
+    private Long id;
 
-    //Campos de texto que especifican el problema del ticket
-    
+    // Campos de texto que especifican el problema del ticket
     private String titulo;
     private String descripcion;
 
-    // le dice a jpa que este campo es un enumerado y se almacenará como una cadena en la base de datos
+    // Le dice a JPA que este campo es un enumerado y se almacenará como una cadena en la base de datos
     @Enumerated(EnumType.STRING)
     private EstadoTicketEnum estado;
 
-
     // Campos de fecha para registrar la creación y resolución del ticket
-
-    @Temporal(TemporalType.DATE)//le dice a jpa que solo quieres almacenar la fecha, no la hora
+    @Temporal(TemporalType.DATE) // Le dice a JPA que solo quieres almacenar la fecha, no la hora
     private Date fechaCreacion;
 
-    @Temporal(TemporalType.DATE)//le dice a jpa que solo quieres almacenar la fecha, no la hora
+    @Temporal(TemporalType.DATE) // Le dice a JPA que solo quieres almacenar la fecha, no la hora
     private Date fechaResolucion;
-
-
-    
 
     @Enumerated(EnumType.STRING)
     private PrioridadEnum prioridad;
@@ -39,22 +32,16 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     private TipoSoporteEnum tipoSoporte;
 
-
     // Campo para almacenar el ID del solicitante del ticket, no es un objeto relacionado, solo un ID
-
     private int idSolicitante;
 
-
-
-
-    
     // Getters y Setters
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
