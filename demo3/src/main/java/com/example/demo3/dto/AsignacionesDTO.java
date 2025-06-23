@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 //lo mas comun y limpio es que este dto trabaje con los ids de ticket y soporte, no con los objetos completos
-//esto permite que el dto sea mas ligero y evita problemas de circularidad en la serializacion
 
 public class AsignacionesDTO {
 

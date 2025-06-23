@@ -9,89 +9,87 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.CollectionModel;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
-
-
-
-
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-//import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
 @RequestMapping("/api/tickets")
 public class TicketController {
 
     @Autowired
-    private TicketModelAssembler ticketModelAssembler;
-
+    private TicketService ticketService;
 
     @Autowired
-    private TicketService ticketService;
+    private TicketModelAssembler ticketModelAssembler;
 
     // 1. Crear Ticket
     @PostMapping
-    public TicketDTO createTicket(@Valid @RequestBody TicketDTO ticketDTO) {
+    public ResponseEntity<TicketDTO> createTicket(@Valid @RequestBody TicketDTO ticketDTO) {
         Ticket ticket = convertToEntity(ticketDTO);
         Ticket creado = ticketService.guardarTicket(ticket);
-        return convertToDTO(creado);
+        return ResponseEntity.ok(convertToDTO(creado));
     }
 
     // 2. Obtener todos los tickets
     @GetMapping
-public CollectionModel<EntityModel<TicketDTO>> getAllTickets() {
-    List<EntityModel<TicketDTO>> tickets = ticketService.obtenerTodos().stream()
-            .map(ticketModelAssembler::toModel)
-            .collect(Collectors.toList());
+    public ResponseEntity<CollectionModel<EntityModel<TicketDTO>>> getAllTickets() {
+        List<EntityModel<TicketDTO>> tickets = ticketService.obtenerTodos().stream()
+                .map(ticketModelAssembler::toModel)
+                .collect(Collectors.toList());
 
-    return CollectionModel.of(tickets,
-            linkTo(methodOn(TicketController.class).getAllTickets()).withSelfRel());
-}
-
+        return ResponseEntity.ok(
+                CollectionModel.of(tickets,
+                        linkTo(methodOn(TicketController.class).getAllTickets()).withSelfRel()));
+    }
 
     // 3. Obtener ticket por ID
-   @GetMapping("/{id}")
-    public EntityModel<TicketDTO> getTicketById(@PathVariable Long id) {
-    Ticket ticket = ticketService.obtenerPorId(id);
-    return ticketModelAssembler.toModel(ticket);
-}
-
+    @GetMapping("/{id}")
+    public ResponseEntity<EntityModel<TicketDTO>> getTicketById(@PathVariable Long id) {
+        Ticket ticket = ticketService.obtenerPorId(id);
+        return ResponseEntity.ok(ticketModelAssembler.toModel(ticket));
+    }
 
     // 4. Eliminar ticket
     @DeleteMapping("/{id}")
-    public String deleteTicket(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
         ticketService.eliminarTicket(id);
-        return "Ticket eliminado correctamente";
+        return ResponseEntity.noContent().build(); // 204
     }
 
     // 5. Cambiar estado a ABIERTO
     @PutMapping("/{id}/abrir")
-    public TicketDTO abrirTicket(@PathVariable Long id) {
-        return convertToDTO(ticketService.abrirTicket(id));
+    public ResponseEntity<TicketDTO> abrirTicket(@PathVariable Long id) {
+        Ticket ticket = ticketService.abrirTicket(id);
+        return ResponseEntity.ok(convertToDTO(ticket));
     }
 
     // 6. Cambiar estado a EN_PROGRESO
     @PutMapping("/{id}/atender")
-    public TicketDTO atenderTicket(@PathVariable Long id) {
-        return convertToDTO(ticketService.atenderTicket(id));
+    public ResponseEntity<TicketDTO> atenderTicket(@PathVariable Long id) {
+        Ticket ticket = ticketService.atenderTicket(id);
+        return ResponseEntity.ok(convertToDTO(ticket));
     }
 
     // 7. Cambiar estado a CERRADO
     @PutMapping("/{id}/cerrar")
-    public TicketDTO cerrarTicket(@PathVariable Long id) {
-        return convertToDTO(ticketService.cerrarTicket(id));
+    public ResponseEntity<TicketDTO> cerrarTicket(@PathVariable Long id) {
+        Ticket ticket = ticketService.cerrarTicket(id);
+        return ResponseEntity.ok(convertToDTO(ticket));
     }
 
     // 8. Actualizar Ticket
     @PutMapping("/{id}")
-    public TicketDTO updateTicket(@PathVariable Long id, @Valid @RequestBody TicketDTO ticketDTO) {
-        Ticket ticketActualizado = ticketService.actualizarTicket(id, convertToEntity(ticketDTO));
-        return convertToDTO(ticketActualizado);
+    public ResponseEntity<TicketDTO> updateTicket(@PathVariable Long id,
+     @Valid @RequestBody TicketDTO ticketDTO) {
+        Ticket actualizado = ticketService.actualizarTicket(id, convertToEntity(ticketDTO));
+        return ResponseEntity.ok(convertToDTO(actualizado));
     }
 
     // Métodos auxiliares
-
     private TicketDTO convertToDTO(Ticket ticket) {
         TicketDTO dto = new TicketDTO();
         dto.setId(ticket.getId());
@@ -120,3 +118,4 @@ public CollectionModel<EntityModel<TicketDTO>> getAllTickets() {
         return ticket;
     }
 }
+
