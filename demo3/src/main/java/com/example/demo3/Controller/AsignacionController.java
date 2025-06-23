@@ -1,92 +1,90 @@
 package com.example.demo3.Controller;
 
 import com.example.demo3.Model.Asignacion;
-import com.example.demo3.Model.Ticket;
-import com.example.demo3.Model.Soporte;
-import com.example.demo3.Repository.AsignacionRepository;
-import com.example.demo3.Repository.TicketRepository;
-import com.example.demo3.Repository.SoporteRepository;
+import com.example.demo3.assembler.AsignacionModelAssembler;
+import com.example.demo3.dto.AsignacionesDTO;
+import com.example.demo3.service.AsignacionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/asignaciones")
 public class AsignacionController {
 
     @Autowired
-    private AsignacionRepository asignacionRepository;
+    private AsignacionModelAssembler asignacionModelAssembler;
+
 
     @Autowired
-    private TicketRepository ticketRepository;
+    private AsignacionService asignacionService;
 
-    @Autowired
-    private SoporteRepository soporteRepository;
-
-    // Obtener todas las asignaciones
-    @GetMapping
-    public List<Asignacion> getAllAsignaciones() {
-        return asignacionRepository.findAll();
-    }
-
-    //  Crear una nueva asignación
+    // 1. Crear asignación
     @PostMapping
-    public Asignacion createAsignacion(@RequestBody Asignacion asignacion) {
-        return asignacionRepository.save(asignacion);
+    public AsignacionesDTO createAsignacion(@Valid @RequestBody AsignacionesDTO dto) {
+        return convertToDTO(asignacionService.guardarAsignacion(dto));
     }
 
-    //  Actualizar una asignación existente
-    @PutMapping("/{id}")
-    public Asignacion updateAsignacion(@PathVariable Long id, @RequestBody Asignacion asignacionDetails) {
-        Optional<Asignacion> optionalAsignacion = asignacionRepository.findById(id);
+    // 2. Obtener todas
+    @GetMapping
+public CollectionModel<EntityModel<AsignacionesDTO>> getAllAsignaciones() {
+    List<EntityModel<AsignacionesDTO>> asignaciones = asignacionService.obtenerTodas().stream()
+            .map(asignacionModelAssembler::toModel)
+            .collect(Collectors.toList());
 
-        if (optionalAsignacion.isPresent()) {
-            Asignacion asignacion = optionalAsignacion.get();
-            asignacion.setFechaAsignacion(asignacionDetails.getFechaAsignacion());
+    return CollectionModel.of(asignaciones,
+            linkTo(methodOn(AsignacionController.class).getAllAsignaciones()).withSelfRel());
+}
 
-            // Relacionar Ticket y Soporte
-            if (asignacionDetails.getTicket() != null) {
-                Optional<Ticket> ticket = ticketRepository.findById(asignacionDetails.getTicket().getId());
-                ticket.ifPresent(asignacion::setTicket);
-            }
 
-            if (asignacionDetails.getSoporte() != null) {
-                Optional<Soporte> soporte = soporteRepository.findById(asignacionDetails.getSoporte().getId());
-                soporte.ifPresent(asignacion::setSoporte);
-            }
+    // 3. Obtener por ID
+    @GetMapping("/{id}")
+public EntityModel<AsignacionesDTO> getAsignacionById(@PathVariable Long id) {
+    Asignacion asignacion = asignacionService.obtenerPorId(id);
+    return asignacionModelAssembler.toModel(asignacion);
+}
 
-            return asignacionRepository.save(asignacion);
-        } else {
-            throw new RuntimeException("Asignación no encontrada");
-        }
-    }
 
-    //  Eliminar una asignación
+    // 4. Eliminar asignación
     @DeleteMapping("/{id}")
     public void deleteAsignacion(@PathVariable Long id) {
-        asignacionRepository.deleteById(id);
+        asignacionService.eliminarAsignacion(id);
     }
 
-    //  Reasignar un soporte a una asignación
+    // 5. Reasignar soporte
     @PutMapping("/{id}/reasignar")
-    public ResponseEntity<Asignacion> reasignarSoporte(
-            @PathVariable Long id,
-            @RequestParam Long soporteId) {
-
-        Optional<Asignacion> asignacionOptional = asignacionRepository.findById(id);
-        Optional<Soporte> soporteOptional = soporteRepository.findById(soporteId);
-
-        if (asignacionOptional.isPresent() && soporteOptional.isPresent()) {
-            Asignacion asignacion = asignacionOptional.get();
-            Soporte nuevoSoporte = soporteOptional.get();
-            asignacion.setSoporte(nuevoSoporte); //  Actualiza el soporte
-            asignacionRepository.save(asignacion); //  Guarda el cambio
-            return ResponseEntity.ok(asignacion);
-        } else {
+    public ResponseEntity<AsignacionesDTO> reasignarSoporte(@PathVariable Long id, @RequestParam Long soporteId) {
+        try {
+            Asignacion reasignada = asignacionService.reasignarSoporte(id, soporteId);
+            return ResponseEntity.ok(convertToDTO(reasignada));
+        } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // 6. Actualizar asignación
+    @PutMapping("/{id}")
+    public AsignacionesDTO updateAsignacion(@PathVariable Long id, @Valid @RequestBody AsignacionesDTO dto) {
+        return convertToDTO(asignacionService.actualizarAsignacion(id, dto));
+    }
+
+    // Conversión a mano
+
+    private AsignacionesDTO convertToDTO(Asignacion asignacion) {
+        AsignacionesDTO dto = new AsignacionesDTO();
+        dto.setId(asignacion.getId());
+        dto.setFechaAsignacion(asignacion.getFechaAsignacion());
+        dto.setTicketId(asignacion.getTicket().getId());
+        dto.setSoporteId(asignacion.getSoporte().getId());
+        return dto;
     }
 }
